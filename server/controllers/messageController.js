@@ -36,12 +36,14 @@ const sendMessage = async (req, res) => {
       sender: senderId,
       receiver: receiverId,
       message: message.trim(),
+      replyTo: req.body.replyTo || null,
     });
 
     // Populate sender and receiver info for the response
     const populatedMessage = await Message.findById(newMessage._id)
       .populate("sender", "-password")
-      .populate("receiver", "-password");
+      .populate("receiver", "-password")
+      .populate({ path: "replyTo", populate: { path: "sender", select: "email" } });
 
     res.status(201).json({
       success: true,
@@ -74,7 +76,8 @@ const getMessages = async (req, res) => {
     })
       .sort({ createdAt: 1 }) // 1 = oldest first (ascending)
       .populate("sender", "-password")
-      .populate("receiver", "-password");
+      .populate("receiver", "-password")
+      .populate({ path: "replyTo", populate: { path: "sender", select: "email" } });
 
     res.status(200).json({
       success: true,

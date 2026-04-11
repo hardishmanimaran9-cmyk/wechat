@@ -28,6 +28,13 @@ const messageSchema = new mongoose.Schema(
       required: [true, "Message cannot be empty"],
       trim: true,
     },
+
+    // Optional reference to a replied message
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+      default: null,
+    },
   },
   {
     // Automatically add createdAt and updatedAt fields

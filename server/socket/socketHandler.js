@@ -39,7 +39,7 @@ const socketHandler = (io) => {
     // ---- SEND MESSAGE ----
     // When a user sends a message
     socket.on("send_message", async (data) => {
-      const { senderId, receiverId, message } = data;
+      const { senderId, receiverId, message, replyTo } = data;
 
       try {
         // Save the message to the database
@@ -47,12 +47,14 @@ const socketHandler = (io) => {
           sender: senderId,
           receiver: receiverId,
           message: message,
+          replyTo: replyTo || null,
         });
 
         // Get the full message with sender/receiver details
         const populatedMessage = await Message.findById(newMessage._id)
           .populate("sender", "-password")
-          .populate("receiver", "-password");
+          .populate("receiver", "-password")
+          .populate({ path: "replyTo", populate: { path: "sender", select: "email" } });
 
         // Send the message to the receiver if they're online
         const receiverSocketId = onlineUsers.get(receiverId);

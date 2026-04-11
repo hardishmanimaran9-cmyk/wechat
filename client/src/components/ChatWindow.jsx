@@ -16,6 +16,7 @@ import { useSocket } from '../context/SocketContext';
 const ChatWindow = ({ selectedUser }) => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
   const messagesEndRef = useRef(null);
   const { user } = useAuth();
   const { socket, onlineUsers } = useSocket();
@@ -85,7 +86,10 @@ const ChatWindow = ({ selectedUser }) => {
       senderId: user._id,
       receiverId: selectedUser._id,
       message: messageText,
+      replyTo: replyingTo ? replyingTo._id : null,
     });
+    
+    setReplyingTo(null);
   };
 
   // Check if selected user is online
@@ -194,6 +198,27 @@ const ChatWindow = ({ selectedUser }) => {
                   key={msg._id || index}
                   className={`flex ${isMine ? 'justify-end' : 'justify-start'} message-enter`}
                   style={{ animationDelay: `${Math.min(index * 0.02, 0.5)}s` }}
+                  onTouchStart={(e) => {
+                    e.currentTarget.dataset.startX = e.touches[0].clientX;
+                    e.currentTarget.style.transition = 'none';
+                  }}
+                  onTouchMove={(e) => {
+                    const startX = parseFloat(e.currentTarget.dataset.startX);
+                    const currentX = e.touches[0].clientX;
+                    const diff = currentX - startX;
+                    if (diff > 0 && diff < 80) { // Only right swipe
+                      e.currentTarget.style.transform = `translateX(${diff}px)`;
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    e.currentTarget.style.transition = 'transform 0.2s';
+                    e.currentTarget.style.transform = 'translateX(0)';
+                    const startX = parseFloat(e.currentTarget.dataset.startX);
+                    const endX = e.changedTouches[0].clientX;
+                    if (endX - startX > 50) {
+                      setReplyingTo(msg);
+                    }
+                  }}
                 >
                   <div
                     className={`max-w-[65%] px-3 py-2 rounded-lg shadow-sm relative
@@ -202,6 +227,15 @@ const ChatWindow = ({ selectedUser }) => {
                         : 'bg-chatwe-bubbleIn text-chatwe-text rounded-tl-none'
                       }`}
                   >
+                    {msg.replyTo && (
+                      <div className={`rounded p-1.5 mb-1.5 text-xs border-l-4 opacity-90
+                        ${isMine ? 'bg-black/10 border-chatwe-sidebar' : 'bg-black/20 border-chatwe-green'}`}>
+                        <span className="font-semibold block truncate">
+                          {msg.replyTo.sender?._id === user._id || msg.replyTo.sender === user._id ? 'You' : msg.replyTo.sender?.email || "Someone"}
+                        </span>
+                        <span className="truncate block opacity-80">{msg.replyTo.message}</span>
+                      </div>
+                    )}
                     <p className="text-[13.5px] leading-relaxed break-words">{msg.message}</p>
                     <p className={`text-[10px] mt-1 text-right
                       ${isMine ? 'text-chatwe-textSec/50' : 'text-chatwe-textSec/40'}`}>
@@ -218,6 +252,17 @@ const ChatWindow = ({ selectedUser }) => {
       </div>
 
       {/* ---- Message Input ---- */}
+      {replyingTo && (
+        <div className="bg-chatwe-sidebar px-4 py-2 flex items-center justify-between border-t border-chatwe-border/30">
+          <div className="flex flex-col flex-1 min-w-0 border-l-4 border-chatwe-green pl-2">
+            <span className="text-chatwe-green text-xs font-semibold">Replying to {replyingTo.sender?._id === user._id || replyingTo.sender === user._id ? 'yourself' : replyingTo.sender?.email || 'someone'}</span>
+            <span className="text-chatwe-textSec text-sm truncate">{replyingTo.message}</span>
+          </div>
+          <button onClick={() => setReplyingTo(null)} className="text-chatwe-icon hover:text-chatwe-text p-2 ml-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+      )}
       <MessageInput onSend={handleSendMessage} disabled={false} />
     </div>
   );

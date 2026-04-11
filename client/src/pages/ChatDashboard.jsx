@@ -4,7 +4,7 @@
 // Main chat interface with sidebar and chat window.
 // This is the protected page users see after logging in.
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import ChatWindow from '../components/ChatWindow';
 
@@ -12,19 +12,37 @@ const ChatDashboard = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showSidebar, setShowSidebar] = useState(true);
 
+  // Intercept hardware back button on mobile
+  useEffect(() => {
+    const handlePopState = (e) => {
+      if (window.innerWidth < 768 && !showSidebar) {
+        setShowSidebar(true);
+        setSelectedUser(null);
+      }
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showSidebar]);
+
   // Handle selecting a user to chat with
   const handleSelectUser = (user) => {
     setSelectedUser(user);
     // On mobile, hide sidebar when a user is selected
     if (window.innerWidth < 768) {
       setShowSidebar(false);
+      window.history.pushState({ chatOpen: true }, '');
     }
   };
 
   // Handle back button on mobile
   const handleBack = () => {
-    setShowSidebar(true);
-    setSelectedUser(null);
+    if (window.history.state?.chatOpen) {
+      window.history.back();
+    } else {
+      setShowSidebar(true);
+      setSelectedUser(null);
+    }
   };
 
   return (
