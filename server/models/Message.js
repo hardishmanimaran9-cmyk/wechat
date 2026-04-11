@@ -36,5 +36,10 @@ const messageSchema = new mongoose.Schema(
   }
 );
 
+// Add a TTL (Time To Live) index on the 'createdAt' field.
+// MongoDB will automatically delete messages 2 days (172800 seconds) after they are created!
+// This is perfect for keeping your free database from ever filling up.
+messageSchema.index({ createdAt: 1 }, { expireAfterSeconds: 172800 });
+
 // Create and export the Message model
 module.exports = mongoose.model("Message", messageSchema);
