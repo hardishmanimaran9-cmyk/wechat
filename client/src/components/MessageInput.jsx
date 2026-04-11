@@ -4,10 +4,26 @@
 // Text input field for sending messages.
 // Sends via Socket.IO for real-time delivery.
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import EmojiPicker from 'emoji-picker-react';
 
 const MessageInput = ({ onSend, disabled }) => {
   const [message, setMessage] = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const pickerRef = useRef(null);
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (pickerRef.current && !pickerRef.current.contains(event.target)) {
+        setShowEmojiPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -17,6 +33,7 @@ const MessageInput = ({ onSend, disabled }) => {
 
     onSend(message.trim());
     setMessage(''); // Clear input after sending
+    setShowEmojiPicker(false);
   };
 
   // Also send on Enter key (without Shift)
@@ -27,13 +44,33 @@ const MessageInput = ({ onSend, disabled }) => {
     }
   };
 
+  const onEmojiClick = (emojiObject) => {
+    setMessage((prev) => prev + emojiObject.emoji);
+  };
+
   return (
-    <div className="px-4 py-3 bg-chatwe-sidebar border-t border-chatwe-border/30">
+    <div className="px-4 py-3 bg-chatwe-sidebar border-t border-chatwe-border/30 relative">
+      {/* Emoji Picker Popup */}
+      {showEmojiPicker && (
+        <div ref={pickerRef} className="absolute bottom-full left-4 mb-2 z-50 shadow-2xl">
+          <EmojiPicker 
+            onEmojiClick={onEmojiClick}
+            theme="dark"
+            searchDisabled
+            skinTonesDisabled
+            height={350}
+            width={300}
+          />
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="flex items-center gap-3">
-        {/* Emoji placeholder button */}
+        {/* Emoji toggle button */}
         <button
           type="button"
-          className="text-chatwe-icon hover:text-chatwe-textSec transition-colors"
+          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+          disabled={disabled}
+          className={`transition-colors ${showEmojiPicker ? 'text-chatwe-green' : 'text-chatwe-icon hover:text-chatwe-textSec'}`}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
