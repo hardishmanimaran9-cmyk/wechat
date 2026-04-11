@@ -117,10 +117,14 @@ const SearchBar = ({ onRequestSent }) => {
             >
               <div className="flex items-center gap-3">
                 {/* Avatar */}
-                <div className="w-9 h-9 rounded-full bg-chatwe-green/20 flex items-center justify-center">
-                  <span className="text-chatwe-green text-sm font-semibold">
-                    {foundUser.email.charAt(0).toUpperCase()}
-                  </span>
+                <div className="w-9 h-9 rounded-full bg-chatwe-green/20 flex items-center justify-center overflow-hidden">
+                  {foundUser.profilePicture ? (
+                    <img src={foundUser.profilePicture} alt="DP" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-chatwe-green text-sm font-semibold">
+                      {foundUser.email.charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 <span className="text-chatwe-text text-sm truncate max-w-[140px]">
                   {foundUser.email}
