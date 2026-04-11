@@ -5,7 +5,7 @@
 
 const express = require("express");
 const router = express.Router();
-const { searchUsers, getFriends, getMe } = require("../controllers/userController");
+const { searchUsers, getFriends, getMe, updateProfilePicture } = require("../controllers/userController");
 const authMiddleware = require("../middleware/auth");
 
 // All routes below require authentication
@@ -17,5 +17,8 @@ router.get("/friends", authMiddleware, getFriends);
 
 // GET /api/users/me
 router.get("/me", authMiddleware, getMe);
+
+// PUT /api/users/profile-picture
+router.put("/profile-picture", authMiddleware, updateProfilePicture);
 
 module.exports = router;
