@@ -8,7 +8,7 @@ import axios from 'axios';
 
 // Create axios instance with the backend URL
 const API = axios.create({
-  baseURL: 'https://wechat-2s9k.onrender.com/api',
+  baseURL: 'https://wechat-1-vt2t.onrender.com/api',
 });
 
 // Request interceptor - automatically adds JWT token to every request
