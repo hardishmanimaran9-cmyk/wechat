@@ -25,7 +25,7 @@ export const SocketProvider = ({ children }) => {
     // Only connect if user is logged in
     if (isAuthenticated && user) {
       // Create new socket connection
-      const newSocket = io('http://localhost:5000', {
+      const newSocket = io('https://wechat-2s9k.onrender.com', {
         transports: ['websocket', 'polling'],
       });
 
