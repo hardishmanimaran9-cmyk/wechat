@@ -90,33 +90,6 @@ const getMe = async (req, res) => {
   }
 };
 
-// ---- UPDATE PROFILE PICTURE ----
-// PUT /api/users/profile-picture
-// Save the base64 string from the frontend client
-const updateProfilePicture = async (req, res) => {
-  try {
-    const { profilePicture } = req.body;
-    
-    if (!profilePicture) {
-      return res.status(400).json({ success: false, message: "No image provided" });
-    }
 
-    // Update the user's document
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user._id,
-      { profilePicture },
-      { new: true } // Return the updated document
-    ).select("-password").populate("friends", "-password").populate("requests.from", "-password");
 
-    res.status(200).json({
-      success: true,
-      user: updatedUser,
-      message: "Profile picture updated successfully!"
-    });
-  } catch (error) {
-    console.error("Profile picture error:", error);
-    res.status(500).json({ success: false, message: "Could not update profile picture." });
-  }
-};
-
-module.exports = { searchUsers, getFriends, getMe, updateProfilePicture };
+module.exports = { searchUsers, getFriends, getMe };

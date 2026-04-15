@@ -87,8 +87,6 @@ const MessageInput = ({ onSend, disabled, editMode, onCancelEdit }) => {
           </svg>
         </button>
 
-        </button>
-
         {/* Message input */}
         <div className="flex-1 relative flex items-center">
           <input
@@ -120,7 +118,7 @@ const MessageInput = ({ onSend, disabled, editMode, onCancelEdit }) => {
         <button
           id="send-button"
           type="submit"
-          disabled={(!message.trim() && !selectedImage) || disabled}
+          disabled={!message.trim() || disabled}
           className={`${editMode ? 'bg-amber-500 shadow-[0_4px_15px_rgba(245,158,11,0.3)]' : 'bg-gradient-to-r from-violet-600 to-pink-600 shadow-[0_4px_15px_rgba(139,92,246,0.3)]'} 
                      text-white p-3.5 rounded-2xl
                      hover:scale-105 hover:brightness-110 active:scale-90 transition-all

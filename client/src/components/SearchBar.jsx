@@ -120,13 +120,9 @@ const SearchBar = ({ onRequestSent }) => {
               <div className="flex items-center gap-3">
                 {/* Avatar */}
                 <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center overflow-hidden rotate-2">
-                  {foundUser.profilePicture ? (
-                    <img src={foundUser.profilePicture} alt="DP" className="w-full h-full object-cover -rotate-2" />
-                  ) : (
-                    <span className="text-violet-400 text-base font-black -rotate-2">
-                      {foundUser.email.charAt(0).toUpperCase()}
-                    </span>
-                  )}
+                  <span className="text-violet-400 text-base font-black -rotate-2">
+                    {foundUser.email.charAt(0).toUpperCase()}
+                  </span>
                 </div>
                 <div className="min-w-0">
                   <p className="text-slate-100 text-[13px] font-bold truncate max-w-[120px]">

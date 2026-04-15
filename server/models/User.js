@@ -24,11 +24,7 @@ const userSchema = new mongoose.Schema(
       minlength: [6, "Password must be at least 6 characters"],
     },
 
-    // User's Profile Picture (stored as a small Base64 string from frontend)
-    profilePicture: {
-      type: String,
-      default: "",
-    },
+
 
     // List of user IDs that this user is friends with
     // "ref: User" means each ID points to another User document

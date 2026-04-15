@@ -19,12 +19,8 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
   const [friends, setFriends] = useState([]);
   const [requests, setRequests] = useState([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
-  const { user, logout, updateUser } = useAuth();
+  const { user, logout } = useAuth();
   const { socket, onlineUsers } = useSocket();
-  
-  // Profile picture upload states
-  const fileInputRef = useRef(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Fetch friends list
   const fetchFriends = async () => {
@@ -101,68 +97,7 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
   // Check if a user is online
   const isOnline = (userId) => onlineUsers.includes(userId);
 
-  // Handle user uploading a new profile picture
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      alert('Please select a valid image file');
-      return;
-    }
-
-    setUploadingImage(true);
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = async () => {
-        // Create canvas to shrink image
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 150;
-        const MAX_HEIGHT = 150;
-        let width = img.width;
-        let height = img.height;
-
-        // Calculate new dimensions preserving aspect ratio
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // Convert to base64 string
-        const base64String = canvas.toDataURL('image/jpeg', 0.8);
-
-        try {
-          // Send to backend
-          const response = await API.put('/users/profile-picture', { profilePicture: base64String });
-          // Update global auth state instantly
-          updateUser(response.data.user);
-        } catch (error) {
-          console.error("Error uploading image", error);
-          alert("Failed to upload image");
-        } finally {
-          setUploadingImage(false);
-          // Reset hidden file input
-          if (fileInputRef.current) fileInputRef.current.value = '';
-        }
-      };
-      img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
-  };
 
   return (
     <div className="w-full md:w-[380px] lg:w-[420px] h-full glass border-r border-white/5 flex flex-col z-20">
@@ -170,44 +105,14 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
       <div className="px-4 py-4 bg-transparent flex items-center justify-between border-b border-white/5">
         <div className="flex items-center gap-3">
           
-          {/* Hidden File Input for Avatar Upload */}
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleImageUpload} 
-            accept="image/*" 
-            className="hidden" 
-          />
-
-          {/* User avatar (Clickable to upload) */}
+          {/* User avatar (Simplified) */}
           <div 
-            onClick={() => fileInputRef.current?.click()}
             className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-pink-500
-                       flex items-center justify-center shadow-[0_0_15px_rgba(139,92,246,0.5)] cursor-pointer hover:scale-105 transition-all relative group overflow-hidden"
-            title="Upload Profile Picture"
+                       flex items-center justify-center shadow-[0_0_15px_rgba(139,92,246,0.3)] select-none"
           >
-            {user?.profilePicture ? (
-               <img src={user.profilePicture} alt="Profile DP" className="w-full h-full object-cover" />
-            ) : (
-               <span className="text-white font-bold text-lg">
-                 {user?.email?.charAt(0).toUpperCase()}
-               </span>
-            )}
-            
-            {/* Hover overlay hint */}
-            <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            
-            {/* Loading Spinner */}
-            {uploadingImage && (
-              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>
-              </div>
-            )}
+             <span className="text-white font-bold text-lg">
+               {user?.email?.charAt(0).toUpperCase()}
+             </span>
           </div>
 
           <div>
@@ -315,17 +220,13 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
                           ? 'bg-chatwe-green/30'
                           : 'bg-chatwe-input'
                         }`}>
-                        {friend.profilePicture ? (
-                           <img src={friend.profilePicture} alt="DP" className="w-full h-full object-cover" />
-                        ) : (
-                           <span className={`text-base font-semibold
-                             ${selectedUser?._id === friend._id
-                               ? 'text-chatwe-green'
-                               : 'text-chatwe-textSec'
-                             }`}>
-                             {friend.email.charAt(0).toUpperCase()}
-                           </span>
-                        )}
+                        <span className={`text-base font-semibold
+                           ${selectedUser?._id === friend._id
+                             ? 'text-chatwe-green'
+                             : 'text-chatwe-textSec'
+                           }`}>
+                           {friend.email.charAt(0).toUpperCase()}
+                        </span>
                       </div>
                       {/* Online dot */}
                       {isOnline(friend._id) && (
@@ -374,13 +275,9 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center overflow-hidden">
-                        {request.from?.profilePicture ? (
-                           <img src={request.from.profilePicture} alt="DP" className="w-full h-full object-cover" />
-                        ) : (
-                           <span className="text-blue-400 text-sm font-semibold">
-                             {request.from?.email?.charAt(0).toUpperCase()}
-                           </span>
-                        )}
+                        <span className="text-blue-400 text-sm font-semibold">
+                          {request.from?.email?.charAt(0).toUpperCase()}
+                        </span>
                       </div>
                       <div>
                         <p className="text-chatwe-text text-sm truncate max-w-[120px]">

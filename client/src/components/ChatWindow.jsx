@@ -225,13 +225,9 @@ const ChatWindow = ({ selectedUser }) => {
         {/* User avatar */}
         <div className="relative">
           <div className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden rotate-3">
-            {selectedUser.profilePicture ? (
-              <img src={selectedUser.profilePicture} alt="DP" className="w-full h-full object-cover -rotate-3" />
-            ) : (
-              <span className="text-violet-400 font-bold text-lg -rotate-3">
-                {selectedUser.email.charAt(0).toUpperCase()}
-              </span>
-            )}
+            <span className="text-violet-400 font-bold text-lg -rotate-3">
+              {selectedUser.email.charAt(0).toUpperCase()}
+            </span>
           </div>
           {isOnline && (
             <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-violet-500 rounded-full
@@ -271,116 +267,117 @@ const ChatWindow = ({ selectedUser }) => {
             )}
             
             {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-chatwe-green/10 flex items-center justify-center">
-                <svg className="w-8 h-8 text-chatwe-green/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                    d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                </svg>
-              </div>
-              <p className="text-chatwe-textSec text-sm">No messages yet</p>
-              <p className="text-chatwe-textSec/50 text-xs mt-1">Say hello! 👋</p>
-            </div>
-          </div>
-        ) : (
-          <>
-            {messages.map((msg, index) => {
-              const isMine = msg.sender._id === user._id || msg.sender === user._id;
-              return (
-                <div
-                  key={msg._id || index}
-                  className={`flex ${isMine ? 'justify-end' : 'justify-start'} message-enter group relative`}
-                  style={{ animationDelay: `${Math.min(index * 0.02, 0.5)}s` }}
-                  onTouchStart={(e) => {
-                    e.currentTarget.dataset.startX = e.touches[0].clientX;
-                    e.currentTarget.style.transition = 'none';
-                  }}
-                  onTouchMove={(e) => {
-                    const startX = parseFloat(e.currentTarget.dataset.startX);
-                    const currentX = e.touches[0].clientX;
-                    const diff = currentX - startX;
-                    if (diff > 0 && diff < 80) { // Only right swipe
-                      e.currentTarget.style.transform = `translateX(${diff}px)`;
-                    }
-                  }}
-                  onTouchEnd={(e) => {
-                    e.currentTarget.style.transition = 'transform 0.2s';
-                    e.currentTarget.style.transform = 'translateX(0)';
-                    const startX = parseFloat(e.currentTarget.dataset.startX);
-                    const endX = e.changedTouches[0].clientX;
-                    if (endX - startX > 50) {
-                      setReplyingTo(msg);
-                    }
-                  }}
-                >
-                  <div
-                    className={`max-w-[75%] px-4 py-3 rounded-2xl shadow-xl relative group-hover:scale-[1.01] transition-transform
-                      ${isMine
-                        ? 'bg-gradient-to-br from-violet-600 to-pink-600 text-white rounded-tr-none'
-                        : 'glass-light text-slate-100 rounded-tl-none border border-white/5'
-                      }`}
-                  >
-                    {msg.replyTo && (
-                      <div className={`rounded-xl p-2.5 mb-2.5 text-xs border-l-4 backdrop-blur-md
-                        ${isMine ? 'bg-white/10 border-white/30' : 'bg-black/20 border-violet-500'}`}>
-                        <span className="font-bold block truncate mb-0.5">
-                          {msg.replyTo.sender?._id === user._id || msg.replyTo.sender === user._id ? 'You' : msg.replyTo.sender?.email || "Someone"}
-                        </span>
-                        <span className="truncate block opacity-70 italic">{msg.replyTo.message}</span>
-                      </div>
-                    )}
-                    
-                    <p className="text-[14px] leading-relaxed font-medium tracking-tight whitespace-pre-wrap">{msg.message}</p>
-                    
-                    <div className="flex items-center justify-end gap-2 mt-1.5">
-                      {msg.isEdited && (
-                        <span className={`text-[9px] font-bold uppercase tracking-widest opacity-40`}>
-                          edited
-                        </span>
-                      )}
-                      <p className={`text-[10px] font-bold opacity-40`}>
-                        {formatTime(msg.createdAt)}
-                      </p>
-                    </div>
-
-                    {/* Edit/Delete Actions */}
-                    {isMine && (
-                      <div className="absolute -left-12 top-1/2 -translate-y-1/2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                        <button 
-                          onClick={() => setEditingMessage(msg)}
-                          className="p-2 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-violet-400 hover:border-violet-400/50 backdrop-blur-md transition-all active:scale-90"
-                          title="Edit"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteMessage(msg._id)}
-                          className="p-2 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-red-400 hover:border-red-400/50 backdrop-blur-md transition-all active:scale-90"
-                          title="Unsend"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                      </div>
-                    )}
+              <div className="flex items-center justify-center h-full text-center py-20">
+                <div>
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-violet-500/10 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-violet-500/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                        d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                    </svg>
                   </div>
+                  <p className="text-slate-400 text-sm">No messages yet</p>
+                  <p className="text-slate-500 text-xs mt-1">Say hello! 👋</p>
                 </div>
-              );
-            })}
-            {/* Invisible element to scroll to */}
-            <div ref={messagesEndRef} />
+              </div>
+            ) : (
+              <>
+                {messages.map((msg, index) => {
+                  const isMine = msg.sender._id === user._id || msg.sender === user._id;
+                  return (
+                    <div
+                      key={msg._id || index}
+                      className={`flex ${isMine ? 'justify-end' : 'justify-start'} message-enter group relative`}
+                      style={{ animationDelay: `${Math.min(index * 0.02, 0.5)}s` }}
+                      onTouchStart={(e) => {
+                        e.currentTarget.dataset.startX = e.touches[0].clientX;
+                        e.currentTarget.style.transition = 'none';
+                      }}
+                      onTouchMove={(e) => {
+                        const startX = parseFloat(e.currentTarget.dataset.startX);
+                        const currentX = e.touches[0].clientX;
+                        const diff = currentX - startX;
+                        if (diff > 0 && diff < 80) { // Only right swipe
+                          e.currentTarget.style.transform = `translateX(${diff}px)`;
+                        }
+                      }}
+                      onTouchEnd={(e) => {
+                        e.currentTarget.style.transition = 'transform 0.2s';
+                        e.currentTarget.style.transform = 'translateX(0)';
+                        const startX = parseFloat(e.currentTarget.dataset.startX);
+                        const endX = e.changedTouches[0].clientX;
+                        if (endX - startX > 50) {
+                          setReplyingTo(msg);
+                        }
+                      }}
+                    >
+                      <div
+                        className={`max-w-[75%] px-4 py-3 rounded-2xl shadow-xl relative group-hover:scale-[1.01] transition-transform
+                          ${isMine
+                            ? 'bg-gradient-to-br from-violet-600 to-pink-600 text-white rounded-tr-none'
+                            : 'glass-light text-slate-100 rounded-tl-none border border-white/5'
+                          }`}
+                      >
+                        {msg.replyTo && (
+                          <div className={`rounded-xl p-2.5 mb-2.5 text-xs border-l-4 backdrop-blur-md
+                            ${isMine ? 'bg-white/10 border-white/30' : 'bg-black/20 border-violet-500'}`}>
+                            <span className="font-bold block truncate mb-0.5">
+                              {msg.replyTo.sender?._id === user._id || msg.replyTo.sender === user._id ? 'You' : msg.replyTo.sender?.email || "Someone"}
+                            </span>
+                            <span className="truncate block opacity-70 italic">{msg.replyTo.message}</span>
+                          </div>
+                        )}
+                        
+                        <p className="text-[14px] leading-relaxed font-medium tracking-tight whitespace-pre-wrap">{msg.message}</p>
+                        
+                        <div className="flex items-center justify-end gap-2 mt-1.5">
+                          {msg.isEdited && (
+                            <span className={`text-[9px] font-bold uppercase tracking-widest opacity-40`}>
+                              edited
+                            </span>
+                          )}
+                          <p className={`text-[10px] font-bold opacity-40`}>
+                            {formatTime(msg.createdAt)}
+                          </p>
+                        </div>
+
+                        {/* Edit/Delete Actions */}
+                        {isMine && (
+                          <div className="absolute -left-12 top-1/2 -translate-y-1/2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                            <button 
+                              onClick={() => setEditingMessage(msg)}
+                              className="p-2 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-violet-400 hover:border-violet-400/50 backdrop-blur-md transition-all active:scale-90"
+                              title="Edit"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteMessage(msg._id)}
+                              className="p-2 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-red-400 hover:border-red-400/50 backdrop-blur-md transition-all active:scale-90"
+                              title="Unsend"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </>
+            )}
           </>
         )}
       </div>
 
       {/* ---- Message Input ---- */}
       {replyingTo && (
-        <div className="bg-chatwe-sidebar px-4 py-2 flex items-center justify-between border-t border-chatwe-border/30">
-          <div className="flex flex-col flex-1 min-w-0 border-l-4 border-chatwe-green pl-2">
-            <span className="text-chatwe-green text-xs font-semibold">Replying to {replyingTo.sender?._id === user._id || replyingTo.sender === user._id ? 'yourself' : replyingTo.sender?.email || 'someone'}</span>
-            <span className="text-chatwe-textSec text-sm truncate">{replyingTo.message}</span>
+        <div className="bg-white/5 px-6 py-2 flex items-center justify-between border-t border-white/5 backdrop-blur-lg">
+          <div className="flex flex-col flex-1 min-w-0 border-l-2 border-violet-500 pl-3">
+            <span className="text-violet-400 text-[10px] font-black uppercase tracking-widest">Replying to {replyingTo.sender?._id === user._id || replyingTo.sender === user._id ? 'yourself' : replyingTo.sender?.email || 'someone'}</span>
+            <span className="text-slate-300 text-xs truncate font-medium">{replyingTo.message}</span>
           </div>
-          <button onClick={() => setReplyingTo(null)} className="text-chatwe-icon hover:text-chatwe-text p-2 ml-2">
+          <button onClick={() => setReplyingTo(null)} className="text-slate-500 hover:text-slate-100 p-2 ml-4 transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
