@@ -7,8 +7,16 @@
 import axios from 'axios';
 
 // Create axios instance with the backend URL
+const getBaseURL = () => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  // If we are on localhost, default to localhost:5000
+  if (window.location.hostname === 'localhost') return 'http://localhost:5000/api';
+  // Fallback for production or other environments
+  return 'https://wechat-1-vt2t.onrender.com/api';
+};
+
 const API = axios.create({
-  baseURL: 'https://wechat-1-vt2t.onrender.com/api',
+  baseURL: getBaseURL(),
 });
 
 // Request interceptor - automatically adds JWT token to every request

@@ -24,8 +24,12 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     // Only connect if user is logged in
     if (isAuthenticated && user) {
+      // Determine the backend URL
+      const socketURL = import.meta.env.VITE_SOCKET_URL || 
+                        (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://wechat-1-vt2t.onrender.com');
+
       // Create new socket connection
-      const newSocket = io('https://wechat-1-vt2t.onrender.com', {
+      const newSocket = io(socketURL, {
         transports: ['websocket', 'polling'],
       });
 
