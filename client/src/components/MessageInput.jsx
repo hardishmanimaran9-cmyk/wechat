@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import EmojiPicker from 'emoji-picker-react';
+import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 
 const MessageInput = ({ onSend, disabled, editMode, onCancelEdit, selectedUser }) => {
   const [message, setMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const pickerRef = useRef(null);
-  const { socket, user } = useSocket();
+  const { socket } = useSocket();
+  const { user } = useAuth();
   const typingTimeoutRef = useRef(null);
 
   // If in edit mode, populate the message input
