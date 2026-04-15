@@ -12,8 +12,16 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
+const path = require("path");
+const fs = require("fs");
 const connectDB = require("./config/db");
 const socketHandler = require("./socket/socketHandler");
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
 
 // Step 3: Import route files
 const authRoutes = require("./routes/auth");
@@ -43,6 +51,15 @@ app.use(
 );
 // express.json() parses incoming JSON request bodies
 app.use(express.json());
+
+// Attach io to req so it's accessible in controllers
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
+// Serve uploads folder statically
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Step 7: API Routes
 // All auth routes will be prefixed with /api/auth

@@ -5,6 +5,9 @@
 
 const Message = require("../models/Message");
 const User = require("../models/User");
+const sharp = require("sharp");
+const path = require("path");
+const fs = require("fs");
 
 // ---- SEND MESSAGE ----
 // POST /api/messages/send
@@ -14,11 +17,11 @@ const sendMessage = async (req, res) => {
     const { receiverId, message } = req.body;
     const senderId = req.user._id;
 
-    // Validate input
-    if (!receiverId || !message) {
+    // Validate input: Either message or image is required
+    if (!receiverId || (!message && !req.file)) {
       return res.status(400).json({
         success: false,
-        message: "Receiver and message are required.",
+        message: "Receiver and at least a message or image are required.",
       });
     }
 
@@ -31,19 +34,38 @@ const sendMessage = async (req, res) => {
       });
     }
 
+    let imagePath = null;
+    if (req.file) {
+      const fileName = `chat-${Date.now()}.webp`;
+      const fullPath = path.join(__dirname, "../uploads", fileName);
+      
+      // Compress image using sharp
+      await sharp(req.file.buffer)
+        .resize(800, 800, { fit: "inside", withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toFile(fullPath);
+        
+      imagePath = fileName;
+    }
+
     // Create the message in the database
     const newMessage = await Message.create({
       sender: senderId,
       receiver: receiverId,
-      message: message.trim(),
+      message: message ? message.trim() : "",
+      image: imagePath,
       replyTo: req.body.replyTo || null,
     });
 
-    // Populate sender and receiver info for the response
+    // Populated message for socket emission
     const populatedMessage = await Message.findById(newMessage._id)
       .populate("sender", "-password")
       .populate("receiver", "-password")
       .populate({ path: "replyTo", populate: { path: "sender", select: "email" } });
+
+    // Emit to both parties via Socket.IO
+    req.io.to(receiverId.toString()).emit("receive_message", populatedMessage);
+    req.io.to(senderId.toString()).emit("receive_message", populatedMessage);
 
     res.status(201).json({
       success: true,
@@ -92,4 +114,84 @@ const getMessages = async (req, res) => {
   }
 };
 
-module.exports = { sendMessage, getMessages };
+// ---- EDIT MESSAGE ----
+// PUT /api/messages/:messageId
+const editMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { newMessage } = req.body;
+    const userId = req.user._id;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ success: false, message: "Message not found" });
+    }
+
+    if (message.sender.toString() !== userId.toString()) {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    message.message = newMessage.trim();
+    message.isEdited = true;
+    await message.save();
+
+    const populatedMessage = await Message.findById(message._id)
+      .populate("sender", "-password")
+      .populate("receiver", "-password")
+      .populate({ path: "replyTo", populate: { path: "sender", select: "email" } });
+
+    // Emit update via socket
+    const editData = {
+      messageId: message._id,
+      newMessage: message.message,
+      senderId: message.sender,
+      receiverId: message.receiver,
+      isEdited: true
+    };
+    req.io.to(message.receiver.toString()).emit("message_updated", editData);
+    req.io.to(message.sender.toString()).emit("message_updated", editData);
+
+    res.status(200).json({ success: true, message: populatedMessage });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// ---- DELETE MESSAGE (UNSEND) ----
+// DELETE /api/messages/:messageId
+const deleteMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user._id;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ success: false, message: "Message not found" });
+    }
+
+    if (message.sender.toString() !== userId.toString()) {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    // If there is an image, delete it from the server
+    if (message.image) {
+      const filePath = path.join(__dirname, "../uploads", message.image);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    const { receiver, sender } = message;
+    await Message.findByIdAndDelete(messageId);
+
+    // Emit delete via socket
+    req.io.to(receiver.toString()).emit("message_deleted", { messageId });
+    req.io.to(sender.toString()).emit("message_deleted", { messageId });
+
+    res.status(200).json({ success: true, message: "Message deleted" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+module.exports = { sendMessage, getMessages, editMessage, deleteMessage };

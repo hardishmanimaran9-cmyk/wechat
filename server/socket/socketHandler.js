@@ -70,6 +70,24 @@ const socketHandler = (io) => {
       }
     });
 
+    // ---- EDIT MESSAGE ----
+    socket.on("edit_message", (data) => {
+      const { receiverId, messageId, newMessage, isEdited } = data;
+      const receiverSocketId = onlineUsers.get(receiverId);
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("message_updated", data);
+      }
+    });
+
+    // ---- DELETE MESSAGE ----
+    socket.on("delete_message", (data) => {
+      const { receiverId, messageId } = data;
+      const receiverSocketId = onlineUsers.get(receiverId);
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("message_deleted", { messageId });
+      }
+    });
+
     // ---- NEW REQUEST NOTIFICATION ----
     // Notify a user when they receive a chat request
     socket.on("new_request", (data) => {

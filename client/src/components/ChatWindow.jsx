@@ -17,6 +17,7 @@ const ChatWindow = ({ selectedUser }) => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
   const messagesEndRef = useRef(null);
   const { user } = useAuth();
   const { socket, onlineUsers } = useSocket();
@@ -72,24 +73,66 @@ const ChatWindow = ({ selectedUser }) => {
 
     socket.on('receive_message', handleReceiveMessage);
 
+    const handleMessageUpdated = (data) => {
+      setMessages((prev) => 
+        prev.map((msg) => 
+          msg._id === data.messageId 
+            ? { ...msg, message: data.newMessage, isEdited: true } 
+            : msg
+        )
+      );
+    };
+
+    const handleMessageDeleted = (data) => {
+      setMessages((prev) => prev.filter((msg) => msg._id !== data.messageId));
+    };
+
+    socket.on('message_updated', handleMessageUpdated);
+    socket.on('message_deleted', handleMessageDeleted);
+
     return () => {
       socket.off('receive_message', handleReceiveMessage);
+      socket.off('message_updated', handleMessageUpdated);
+      socket.off('message_deleted', handleMessageDeleted);
     };
   }, [socket, selectedUser?._id]);
 
-  // Send a message
-  const handleSendMessage = (messageText) => {
-    if (!selectedUser || !socket) return;
+  // Send or Edit a message
+  const handleSendMessage = async (messageText, imageFile) => {
+    if (!selectedUser) return;
 
-    // Emit message via socket for real-time delivery
-    socket.emit('send_message', {
-      senderId: user._id,
-      receiverId: selectedUser._id,
-      message: messageText,
-      replyTo: replyingTo ? replyingTo._id : null,
-    });
+    try {
+      if (editingMessage) {
+        // Handle Edit
+        await API.put(`/messages/${editingMessage._id}`, { newMessage: messageText });
+        setEditingMessage(null);
+      } else {
+        // Handle Send (Text or Image)
+        const formData = new FormData();
+        formData.append('receiverId', selectedUser._id);
+        if (messageText) formData.append('message', messageText);
+        if (imageFile) formData.append('image', imageFile);
+        if (replyingTo) formData.append('replyTo', replyingTo._id);
+
+        await API.post('/messages/send', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      }
+    } catch (error) {
+      console.error('Error sending/editing message:', error);
+    }
     
     setReplyingTo(null);
+  };
+
+  // Delete/Unsend a message
+  const handleDeleteMessage = async (messageId) => {
+    if (!window.confirm("Are you sure you want to unsend this message?")) return;
+    try {
+      await API.delete(`/messages/${messageId}`);
+    } catch (error) {
+      console.error('Error deleting message:', error);
+    }
   };
 
   // Check if selected user is online
@@ -101,34 +144,37 @@ const ChatWindow = ({ selectedUser }) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // ---- EMPTY STATE (no user selected) ----
   if (!selectedUser) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-chatwe-dark">
-        <div className="text-center fade-in">
+      <div className="flex-1 flex flex-col items-center justify-center bg-chatwe-dark relative overflow-hidden">
+        {/* Animated background glows */}
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-violet-500/10 rounded-full blur-[100px] animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-pink-500/10 rounded-full blur-[100px] animate-pulse delay-700"></div>
+
+        <div className="text-center fade-in z-10">
           {/* Logo/Icon */}
-          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-chatwe-green/20 to-chatwe-greenDark/10
-                          flex items-center justify-center">
-            <svg className="w-12 h-12 text-chatwe-green/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-white/[0.03] border border-white/5
+                          flex items-center justify-center rotate-12 hover:rotate-0 transition-transform duration-500 shadow-2xl">
+            <svg className="w-12 h-12 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
           </div>
 
-          <h2 className="text-chatwe-text text-2xl font-semibold mb-2">Chatwe</h2>
-          <p className="text-chatwe-textSec text-sm max-w-sm">
-            Select a friend from the sidebar to start chatting.
+          <h2 className="text-4xl font-black mb-2 text-gradient tracking-tight">Chatwe</h2>
+          <p className="text-slate-400 text-sm max-w-sm font-medium">
+            Next-gen messaging for the bold.
             <br />
-            Send and receive messages in real-time.
+            Select a friend to start the vibe.
           </p>
 
           {/* Feature badges */}
           <div className="flex items-center justify-center gap-3 mt-8">
-            <span className="text-[11px] text-chatwe-textSec/50 bg-chatwe-input/50 px-3 py-1.5 rounded-full">
-              🔒 End-to-end encrypted
+            <span className="text-[11px] text-slate-400 bg-white/5 border border-white/5 px-4 py-2 rounded-full font-bold">
+              🔒 Encrypted
             </span>
-            <span className="text-[11px] text-chatwe-textSec/50 bg-chatwe-input/50 px-3 py-1.5 rounded-full">
-              ⚡ Real-time messaging
+            <span className="text-[11px] text-slate-400 bg-white/5 border border-white/5 px-4 py-2 rounded-full font-bold">
+              ⚡ Real-time
             </span>
           </div>
         </div>
@@ -138,32 +184,35 @@ const ChatWindow = ({ selectedUser }) => {
 
   // ---- CHAT VIEW ----
   return (
-    <div className="flex-1 flex flex-col bg-chatwe-chat h-full">
+    <div className="flex-1 flex flex-col bg-chatwe-chat h-full relative">
       {/* ---- Chat Header ---- */}
-      <div className="px-4 py-3 bg-chatwe-sidebar border-b border-chatwe-border/20 flex items-center gap-3">
+      <div className="px-6 py-4 glass-light border-b border-white/5 flex items-center gap-4 z-10">
         {/* User avatar */}
         <div className="relative">
-          <div className="w-10 h-10 rounded-full bg-chatwe-input flex items-center justify-center overflow-hidden">
+          <div className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden rotate-3">
             {selectedUser.profilePicture ? (
-              <img src={selectedUser.profilePicture} alt="DP" className="w-full h-full object-cover" />
+              <img src={selectedUser.profilePicture} alt="DP" className="w-full h-full object-cover -rotate-3" />
             ) : (
-              <span className="text-chatwe-textSec font-semibold">
+              <span className="text-violet-400 font-bold text-lg -rotate-3">
                 {selectedUser.email.charAt(0).toUpperCase()}
               </span>
             )}
           </div>
           {isOnline && (
-            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-chatwe-green rounded-full
-                             border-2 border-chatwe-sidebar online-dot" />
+            <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-violet-500 rounded-full
+                             border-2 border-[#020617] online-dot" />
           )}
         </div>
 
         {/* User info */}
         <div className="flex-1">
-          <p className="text-chatwe-text text-sm font-medium">{selectedUser.email}</p>
-          <p className={`text-xs ${isOnline ? 'text-chatwe-green' : 'text-chatwe-textSec/60'}`}>
-            {isOnline ? 'Online' : 'Offline'}
-          </p>
+          <p className="text-slate-100 text-sm font-bold tracking-tight">{selectedUser.email}</p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-violet-500' : 'bg-slate-600'}`}></div>
+            <p className={`text-[11px] font-bold uppercase tracking-widest ${isOnline ? 'text-violet-400' : 'text-slate-500'}`}>
+              {isOnline ? 'Online' : 'Offline'}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -196,7 +245,7 @@ const ChatWindow = ({ selectedUser }) => {
               return (
                 <div
                   key={msg._id || index}
-                  className={`flex ${isMine ? 'justify-end' : 'justify-start'} message-enter`}
+                  className={`flex ${isMine ? 'justify-end' : 'justify-start'} message-enter group relative`}
                   style={{ animationDelay: `${Math.min(index * 0.02, 0.5)}s` }}
                   onTouchStart={(e) => {
                     e.currentTarget.dataset.startX = e.touches[0].clientX;
@@ -221,26 +270,66 @@ const ChatWindow = ({ selectedUser }) => {
                   }}
                 >
                   <div
-                    className={`max-w-[65%] px-3 py-2 rounded-lg shadow-sm relative
+                    className={`max-w-[75%] px-4 py-3 rounded-2xl shadow-xl relative group-hover:scale-[1.01] transition-transform
                       ${isMine
-                        ? 'bg-chatwe-bubble text-chatwe-text rounded-tr-none'
-                        : 'bg-chatwe-bubbleIn text-chatwe-text rounded-tl-none'
+                        ? 'bg-gradient-to-br from-violet-600 to-pink-600 text-white rounded-tr-none'
+                        : 'glass-light text-slate-100 rounded-tl-none border border-white/5'
                       }`}
                   >
                     {msg.replyTo && (
-                      <div className={`rounded p-1.5 mb-1.5 text-xs border-l-4 opacity-90
-                        ${isMine ? 'bg-black/10 border-chatwe-sidebar' : 'bg-black/20 border-chatwe-green'}`}>
-                        <span className="font-semibold block truncate">
+                      <div className={`rounded-xl p-2.5 mb-2.5 text-xs border-l-4 backdrop-blur-md
+                        ${isMine ? 'bg-white/10 border-white/30' : 'bg-black/20 border-violet-500'}`}>
+                        <span className="font-bold block truncate mb-0.5">
                           {msg.replyTo.sender?._id === user._id || msg.replyTo.sender === user._id ? 'You' : msg.replyTo.sender?.email || "Someone"}
                         </span>
-                        <span className="truncate block opacity-80">{msg.replyTo.message}</span>
+                        <span className="truncate block opacity-70 italic">{msg.replyTo.message}</span>
                       </div>
                     )}
-                    <p className="text-[13.5px] leading-relaxed break-words">{msg.message}</p>
-                    <p className={`text-[10px] mt-1 text-right
-                      ${isMine ? 'text-chatwe-textSec/50' : 'text-chatwe-textSec/40'}`}>
-                      {formatTime(msg.createdAt)}
-                    </p>
+                    
+                    {/* Image Message */}
+                    {msg.image && (
+                      <div className="mb-2.5 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10">
+                        <img 
+                          src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/uploads/${msg.image}`} 
+                          alt="Sent" 
+                          className="max-w-full h-auto cursor-pointer hover:scale-105 transition-transform duration-500"
+                          onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/uploads/${msg.image}`, '_blank')}
+                        />
+                      </div>
+                    )}
+
+                    <p className="text-[14px] leading-relaxed font-medium tracking-tight whitespace-pre-wrap">{msg.message}</p>
+                    
+                    <div className="flex items-center justify-end gap-2 mt-1.5">
+                      {msg.isEdited && (
+                        <span className={`text-[9px] font-bold uppercase tracking-widest opacity-40`}>
+                          edited
+                        </span>
+                      )}
+                      <p className={`text-[10px] font-bold opacity-40`}>
+                        {formatTime(msg.createdAt)}
+                      </p>
+                    </div>
+
+                    {/* Edit/Delete Actions */}
+                    {isMine && (
+                      <div className="absolute -left-12 top-1/2 -translate-y-1/2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                        <button 
+                          onClick={() => setEditingMessage(msg)}
+                          className="p-2 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-violet-400 hover:border-violet-400/50 backdrop-blur-md transition-all active:scale-90"
+                          title="Edit"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteMessage(msg._id)}
+                          className="p-2 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-red-400 hover:border-red-400/50 backdrop-blur-md transition-all active:scale-90"
+                          title="Unsend"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -263,7 +352,12 @@ const ChatWindow = ({ selectedUser }) => {
           </button>
         </div>
       )}
-      <MessageInput onSend={handleSendMessage} disabled={false} />
+      <MessageInput 
+        onSend={handleSendMessage} 
+        disabled={false} 
+        editMode={editingMessage}
+        onCancelEdit={() => setEditingMessage(null)}
+      />
     </div>
   );
 };

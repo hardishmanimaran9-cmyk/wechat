@@ -165,9 +165,9 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
   };
 
   return (
-    <div className="w-full md:w-[380px] lg:w-[420px] h-full bg-chatwe-sidebar border-r border-chatwe-border/30 flex flex-col">
+    <div className="w-full md:w-[380px] lg:w-[420px] h-full glass border-r border-white/5 flex flex-col z-20">
       {/* ---- Header ---- */}
-      <div className="px-4 py-3 bg-chatwe-sidebar flex items-center justify-between border-b border-chatwe-border/20">
+      <div className="px-4 py-4 bg-transparent flex items-center justify-between border-b border-white/5">
         <div className="flex items-center gap-3">
           
           {/* Hidden File Input for Avatar Upload */}
@@ -182,8 +182,8 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
           {/* User avatar (Clickable to upload) */}
           <div 
             onClick={() => fileInputRef.current?.click()}
-            className="w-10 h-10 rounded-full bg-gradient-to-br from-chatwe-green to-chatwe-greenDark
-                       flex items-center justify-center shadow-lg cursor-pointer hover:opacity-90 transition-opacity relative group overflow-hidden"
+            className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-pink-500
+                       flex items-center justify-center shadow-[0_0_15px_rgba(139,92,246,0.5)] cursor-pointer hover:scale-105 transition-all relative group overflow-hidden"
             title="Upload Profile Picture"
           >
             {user?.profilePicture ? (
@@ -249,24 +249,26 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
         <button
           id="friends-tab"
           onClick={() => setActiveTab('friends')}
-          className={`flex-1 py-3 text-sm font-medium transition-all duration-200
+          className={`flex-1 py-4 text-sm font-semibold transition-all duration-300 relative
             ${activeTab === 'friends'
-              ? 'text-chatwe-green border-b-2 border-chatwe-green'
-              : 'text-chatwe-textSec hover:text-chatwe-text'
+              ? 'text-violet-400'
+              : 'text-slate-500 hover:text-slate-300'
             }`}
         >
           Friends {friends.length > 0 && `(${friends.length})`}
+          {activeTab === 'friends' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-violet-500 to-pink-500" />}
         </button>
         <button
           id="requests-tab"
           onClick={() => setActiveTab('requests')}
-          className={`flex-1 py-3 text-sm font-medium transition-all duration-200 relative
+          className={`flex-1 py-4 text-sm font-semibold transition-all duration-300 relative
             ${activeTab === 'requests'
-              ? 'text-chatwe-green border-b-2 border-chatwe-green'
-              : 'text-chatwe-textSec hover:text-chatwe-text'
+              ? 'text-violet-400'
+              : 'text-slate-500 hover:text-slate-300'
             }`}
         >
           Requests
+          {activeTab === 'requests' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-violet-500 to-pink-500" />}
           {/* Badge for pending requests */}
           {requests.length > 0 && (
             <span className="ml-1.5 bg-chatwe-green text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
@@ -302,9 +304,9 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
                   <button
                     key={friend._id}
                     onClick={() => onSelectUser(friend)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 transition-all duration-150
-                      hover:bg-chatwe-hover
-                      ${selectedUser?._id === friend._id ? 'bg-chatwe-hover' : ''}`}
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 transition-all duration-200
+                      hover:bg-white/[0.03]
+                      ${selectedUser?._id === friend._id ? 'bg-white/[0.05] border-l-4 border-violet-500' : 'border-l-4 border-transparent'}`}
                   >
                     {/* Avatar with online indicator */}
                     <div className="relative">
@@ -367,8 +369,8 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
                 {requests.map((request) => (
                   <div
                     key={request._id}
-                    className="flex items-center justify-between p-3 rounded-xl
-                               bg-chatwe-input/30 hover:bg-chatwe-hover transition-colors"
+                    className="flex items-center justify-between p-4 rounded-2xl
+                               glass-light hover:bg-white/[0.05] transition-all"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center overflow-hidden">
@@ -392,16 +394,16 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
                       {/* Accept button */}
                       <button
                         onClick={() => handleRespond(request._id, 'accepted')}
-                        className="bg-chatwe-green/20 text-chatwe-green px-3 py-1.5 rounded-full text-xs font-medium
-                                   hover:bg-chatwe-green/30 transition-colors active:scale-95"
+                        className="bg-violet-500 text-white px-4 py-2 rounded-full text-xs font-bold
+                                   hover:scale-105 shadow-[0_4px_10px_rgba(139,92,246,0.3)] transition-all active:scale-95"
                       >
                         Accept
                       </button>
                       {/* Reject button */}
                       <button
                         onClick={() => handleRespond(request._id, 'rejected')}
-                        className="bg-red-500/10 text-red-400 px-3 py-1.5 rounded-full text-xs font-medium
-                                   hover:bg-red-500/20 transition-colors active:scale-95"
+                        className="bg-white/5 text-slate-400 px-4 py-2 rounded-full text-xs font-bold
+                                   hover:bg-red-500/20 hover:text-red-400 transition-all active:scale-95"
                       >
                         Reject
                       </button>

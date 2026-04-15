@@ -22,11 +22,23 @@ const messageSchema = new mongoose.Schema(
       required: true,
     },
 
-    // The actual message text
+    // The actual message text (now optional if an image is sent)
     message: {
       type: String,
-      required: [true, "Message cannot be empty"],
+      required: false,
       trim: true,
+    },
+
+    // Optional field for image message
+    image: {
+      type: String,
+      default: null,
+    },
+
+    // Track if a message has been edited
+    isEdited: {
+      type: Boolean,
+      default: false,
     },
 
     // Optional reference to a replied message

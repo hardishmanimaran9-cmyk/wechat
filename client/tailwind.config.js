@@ -9,21 +9,21 @@ export default {
       colors: {
         // Custom Chatwe color palette
         chatwe: {
-          dark: '#0b141a',      // Main background (dark)
-          darker: '#060d11',    // Darker panels
-          sidebar: '#111b21',   // Sidebar background
-          chat: '#0b141a',      // Chat area background
-          input: '#1e2a30',     // Input field background
-          hover: '#182229',     // Hover states
-          border: '#2a3942',    // Border color
-          green: '#00a884',     // Primary green (WhatsApp-like)
-          greenLight: '#05d398',// Lighter green for hover
-          greenDark: '#008f72', // Darker green
-          bubble: '#005c4b',    // Sent message bubble
-          bubbleIn: '#1e2a30',  // Received message bubble
-          text: '#e9edef',      // Primary text
-          textSec: '#8696a0',   // Secondary text
-          icon: '#aebac1',      // Icon color
+          dark: '#020617',      // Deep slate background
+          darker: '#000000',    // True black for deep shadows
+          sidebar: '#0f172a',   // Slate sidebar
+          chat: '#020617',      // Main chat background
+          input: 'rgba(255, 255, 255, 0.05)', // Translucent glass input
+          hover: 'rgba(139, 92, 246, 0.1)',  // Violet hover glow
+          border: 'rgba(255, 255, 255, 0.1)', // Subtle glass border
+          green: '#8b5cf6',     // Primary accent (Violet)
+          greenLight: '#f472b6',// Secondary accent (Pink)
+          greenDark: '#7c3aed', // Darker violet
+          bubble: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%)', // Gradient bubbles
+          bubbleIn: 'rgba(255, 255, 255, 0.08)', // Glassy received bubble
+          text: '#f8fafc',      // Bright slate text
+          textSec: '#94a3b8',   // Muted slate text
+          icon: '#cbd5e1',      // Slate icon color
         },
       },
       fontFamily: {
