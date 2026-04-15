@@ -38,6 +38,12 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
+    // User's profile picture filename
+    profilePicture: {
+      type: String,
+      default: "",
+    },
+
 
 
     // List of user IDs that this user is friends with

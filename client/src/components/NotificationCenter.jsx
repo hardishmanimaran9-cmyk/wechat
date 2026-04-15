@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSocket } from '../context/SocketContext';
+import { getFileUrl } from '../utils/helpers';
 
 const NotificationToast = ({ notification, onRemove }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -24,9 +25,13 @@ const NotificationToast = ({ notification, onRemove }) => {
                  ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'}`}
     >
       <div className="flex items-start gap-3">
-        {/* Avatar Placeholder */}
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center flex-shrink-0 text-white font-bold">
-          {notification.sender.charAt(0).toUpperCase()}
+        {/* Avatar */}
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center flex-shrink-0 text-white font-bold overflow-hidden shadow-lg">
+          {notification.profilePicture ? (
+            <img src={getFileUrl(notification.profilePicture)} alt="Sender" className="w-full h-full object-cover" />
+          ) : (
+            <span>{notification.sender.charAt(0).toUpperCase()}</span>
+          )}
         </div>
         
         <div className="flex-1 min-w-0">

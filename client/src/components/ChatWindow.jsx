@@ -12,6 +12,7 @@ import MessageInput from './MessageInput';
 import API from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
+import { getFileUrl } from '../utils/helpers';
 
 const ChatWindow = ({ selectedUser }) => {
   const [messages, setMessages] = useState([]);
@@ -226,9 +227,13 @@ const ChatWindow = ({ selectedUser }) => {
         {/* User avatar */}
         <div className="relative">
           <div className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden rotate-3">
-            <span className="text-violet-400 font-bold text-lg -rotate-3">
-              {(selectedUser.username || selectedUser.email).charAt(0).toUpperCase()}
-            </span>
+             {selectedUser.profilePicture ? (
+               <img src={getFileUrl(selectedUser.profilePicture)} alt="Profile" className="w-full h-full object-cover -rotate-3" />
+             ) : (
+               <span className="text-violet-400 font-bold text-lg -rotate-3">
+                 {(selectedUser.username || selectedUser.email).charAt(0).toUpperCase()}
+               </span>
+             )}
           </div>
           {isOnline && (
             <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-violet-500 rounded-full

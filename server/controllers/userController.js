@@ -155,4 +155,36 @@ const updateProfile = async (req, res) => {
   }
 };
 
-module.exports = { searchUsers, getFriends, getMe, updateProfile };
+// ---- UPDATE PROFILE PICTURE ----
+// POST /api/users/profile-picture
+const uploadProfilePicture = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No file uploaded" });
+    }
+
+    const userId = req.user._id;
+    const filename = req.file.filename;
+
+    // Update user in database
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { profilePicture: filename },
+      { new: true }
+    ).select("-password");
+
+    res.status(200).json({
+      success: true,
+      message: "Profile picture updated successfully",
+      user,
+    });
+  } catch (error) {
+    console.error("Upload profile picture error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while uploading profile picture.",
+    });
+  }
+};
+
+module.exports = { searchUsers, getFriends, getMe, updateProfile, uploadProfilePicture };

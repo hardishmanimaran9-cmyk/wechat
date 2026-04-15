@@ -14,6 +14,7 @@ import ProfileModal from './ProfileModal';
 import API from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
+import { getFileUrl } from '../utils/helpers';
 
 const Sidebar = ({ selectedUser, onSelectUser }) => {
   const [activeTab, setActiveTab] = useState('friends'); // 'friends' or 'requests'
@@ -134,11 +135,15 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
           <div 
             onClick={() => setIsProfileOpen(true)}
             className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-pink-500
-                       flex items-center justify-center shadow-[0_0_15px_rgba(139,92,246,0.3)] select-none cursor-pointer hover:scale-105 transition-transform"
+                       flex items-center justify-center shadow-[0_0_15px_rgba(139,92,246,0.3)] select-none cursor-pointer hover:scale-105 transition-transform overflow-hidden"
           >
-             <span className="text-white font-bold text-lg">
-               {(user?.username || user?.email)?.charAt(0).toUpperCase()}
-             </span>
+             {user?.profilePicture ? (
+               <img src={getFileUrl(user.profilePicture)} alt="Profile" className="w-full h-full object-cover" />
+             ) : (
+               <span className="text-white font-bold text-lg">
+                 {(user?.username || user?.email)?.charAt(0).toUpperCase()}
+               </span>
+             )}
           </div>
 
           <div className="cursor-pointer" onClick={() => setIsProfileOpen(true)}>
@@ -267,13 +272,17 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
                           ? 'bg-chatwe-green/30'
                           : 'bg-chatwe-input'
                         }`}>
-                        <span className={`text-base font-semibold
-                           ${selectedUser?._id === friend._id
-                             ? 'text-chatwe-green'
-                             : 'text-chatwe-textSec'
-                           }`}>
-                           {friend.email.charAt(0).toUpperCase()}
-                        </span>
+                        {friend.profilePicture ? (
+                          <img src={getFileUrl(friend.profilePicture)} alt={friend.username} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className={`text-base font-semibold
+                             ${selectedUser?._id === friend._id
+                               ? 'text-chatwe-green'
+                                : 'text-chatwe-textSec'
+                             }`}>
+                             {(friend.username || friend.email).charAt(0).toUpperCase()}
+                          </span>
+                        )}
                       </div>
                       {/* Online dot */}
                       {isOnline(friend._id) && (

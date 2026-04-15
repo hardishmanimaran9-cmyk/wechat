@@ -76,7 +76,8 @@ export const SocketProvider = ({ children }) => {
                id: Date.now(), 
                text: message.message, 
                sender: message.sender.username || message.sender.email,
-               senderId: senderId
+               senderId: senderId,
+               profilePicture: message.sender.profilePicture
              }
            ]);
         }
