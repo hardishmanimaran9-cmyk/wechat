@@ -22,7 +22,7 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { user, logout } = useAuth();
-  const { socket, onlineUsers } = useSocket();
+  const { socket, onlineUsers, unreadCounts, typingStatus, clearUnread } = useSocket();
 
   // Fetch friends list
   const fetchFriends = async () => {
@@ -229,7 +229,10 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
                 {friends.map((friend) => (
                   <button
                     key={friend._id}
-                    onClick={() => onSelectUser(friend)}
+                    onClick={() => {
+                      onSelectUser(friend);
+                      clearUnread(friend._id);
+                    }}
                     className={`w-full flex items-center gap-3 px-4 py-3.5 transition-all duration-200
                       hover:bg-white/[0.03]
                       ${selectedUser?._id === friend._id ? 'bg-white/[0.05] border-l-4 border-violet-500' : 'border-l-4 border-transparent'}`}
@@ -258,17 +261,33 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
 
                     {/* Friend info */}
                     <div className="flex-1 text-left min-w-0">
-                      <p className="text-chatwe-text text-sm font-bold truncate">
-                        {friend.username || friend.email}
-                      </p>
-                      {friend.username && (
-                        <p className="text-chatwe-textSec/40 text-[10px] truncate">
-                          {friend.email}
+                      <div className="flex items-center justify-between">
+                        <p className="text-chatwe-text text-sm font-bold truncate">
+                          {friend.username || friend.email}
                         </p>
+                        {unreadCounts[friend._id] > 0 && selectedUser?._id !== friend._id && (
+                          <span className="bg-violet-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-lg shadow-violet-500/20">
+                            {unreadCounts[friend._id]}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {typingStatus[friend._id] ? (
+                        <p className="text-[10px] font-bold text-violet-400 animate-pulse uppercase tracking-widest mt-0.5">
+                          Typing...
+                        </p>
+                      ) : (
+                        <div className="flex flex-col">
+                          {friend.username && (
+                            <p className="text-chatwe-textSec/40 text-[10px] truncate">
+                              {friend.email}
+                            </p>
+                          )}
+                          <p className={`text-[10px] font-medium ${isOnline(friend._id) ? 'text-violet-400' : 'text-slate-500'}`}>
+                            {isOnline(friend._id) ? 'Online' : 'Offline'}
+                          </p>
+                        </div>
                       )}
-                      <p className={`text-[10px] font-medium ${isOnline(friend._id) ? 'text-violet-400' : 'text-slate-500'}`}>
-                        {isOnline(friend._id) ? 'Online' : 'Offline'}
-                      </p>
                     </div>
                   </button>
                 ))}

@@ -23,7 +23,7 @@ const ChatWindow = ({ selectedUser }) => {
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const { user } = useAuth();
-  const { socket, onlineUsers } = useSocket();
+  const { socket, onlineUsers, typingStatus } = useSocket();
 
   // Auto-scroll to the latest message
   const scrollToBottom = () => {
@@ -172,6 +172,7 @@ const ChatWindow = ({ selectedUser }) => {
 
   // Check if selected user is online
   const isOnline = selectedUser && onlineUsers.includes(selectedUser._id);
+  const isTyping = selectedUser && typingStatus[selectedUser._id];
 
   // Format timestamp
   const formatTime = (dateString) => {
@@ -239,10 +240,18 @@ const ChatWindow = ({ selectedUser }) => {
         <div className="flex-1">
           <p className="text-slate-100 text-sm font-bold tracking-tight">{selectedUser.username || selectedUser.email}</p>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-violet-500' : 'bg-slate-600'}`}></div>
-            <p className={`text-[11px] font-bold uppercase tracking-widest ${isOnline ? 'text-violet-400' : 'text-slate-500'}`}>
-              {isOnline ? 'Online' : 'Offline'}
-            </p>
+            {isTyping ? (
+              <p className="text-[11px] font-bold uppercase tracking-widest text-violet-400 animate-pulse">
+                Typing...
+              </p>
+            ) : (
+              <>
+                <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-violet-500' : 'bg-slate-600'}`}></div>
+                <p className={`text-[11px] font-bold uppercase tracking-widest ${isOnline ? 'text-violet-400' : 'text-slate-500'}`}>
+                  {isOnline ? 'Online' : 'Offline'}
+                </p>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -387,6 +396,7 @@ const ChatWindow = ({ selectedUser }) => {
         disabled={false} 
         editMode={editingMessage}
         onCancelEdit={() => setEditingMessage(null)}
+        selectedUser={selectedUser}
       />
     </div>
   );

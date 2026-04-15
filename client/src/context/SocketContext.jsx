@@ -19,6 +19,8 @@ export const useSocket = () => {
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const [typingStatus, setTypingStatus] = useState({}); // { userId: boolean }
+  const [unreadCounts, setUnreadCounts] = useState({}); // { userId: count }
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -44,6 +46,29 @@ export const SocketProvider = ({ children }) => {
         setOnlineUsers(users);
       });
 
+      // Listen for typing events
+      newSocket.on('user_typing', ({ userId }) => {
+        setTypingStatus((prev) => ({ ...prev, [userId]: true }));
+      });
+
+      newSocket.on('user_stop_typing', ({ userId }) => {
+        setTypingStatus((prev) => ({ ...prev, [userId]: false }));
+      });
+
+      // Listen for notification-worthy messages
+      newSocket.on('receive_message', (message) => {
+        // Notification logic: If message is from someone else, increment unread count
+        // Note: The specific ChatWindow/Sidebar will handle the 'selectedUser' comparison
+        // via a helper function or by checking the state globally.
+        const senderId = message.sender._id || message.sender;
+        if (senderId !== user?._id) {
+           setUnreadCounts((prev) => ({
+             ...prev,
+             [senderId]: (prev[senderId] || 0) + 1
+           }));
+        }
+      });
+
       // Handle disconnection
       newSocket.on('disconnect', () => {
         console.log('❌ Socket disconnected');
@@ -65,9 +90,16 @@ export const SocketProvider = ({ children }) => {
     }
   }, [isAuthenticated, user?._id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const clearUnread = (userId) => {
+    setUnreadCounts((prev) => ({ ...prev, [userId]: 0 }));
+  };
+
   const value = {
     socket,
     onlineUsers,
+    typingStatus,
+    unreadCounts,
+    clearUnread,
   };
 
   return (

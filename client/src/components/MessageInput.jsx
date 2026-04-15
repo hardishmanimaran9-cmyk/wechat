@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import EmojiPicker from 'emoji-picker-react';
+import { useSocket } from '../context/SocketContext';
 
-const MessageInput = ({ onSend, disabled, editMode, onCancelEdit }) => {
+const MessageInput = ({ onSend, disabled, editMode, onCancelEdit, selectedUser }) => {
   const [message, setMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const pickerRef = useRef(null);
+  const { socket, user } = useSocket();
+  const typingTimeoutRef = useRef(null);
 
   // If in edit mode, populate the message input
   useEffect(() => {
@@ -35,9 +38,18 @@ const MessageInput = ({ onSend, disabled, editMode, onCancelEdit }) => {
     if (!message.trim() || disabled) return;
 
     if (editMode) {
-      onSend(message.trim()); // Pass null as image for edits
+      onSend(message.trim());
     } else {
       onSend(message.trim());
+      
+      // Stop typing immediately when message sent
+      if (socket && user && selectedUser) {
+        socket.emit('stop_typing', { 
+          senderId: user._id, 
+          receiverId: selectedUser._id 
+        });
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      }
     }
     
     setMessage(''); // Clear input after sending
@@ -54,6 +66,30 @@ const MessageInput = ({ onSend, disabled, editMode, onCancelEdit }) => {
 
   const onEmojiClick = (emojiObject) => {
     setMessage((prev) => prev + emojiObject.emoji);
+  };
+
+  const handleInputChange = (e) => {
+    setMessage(e.target.value);
+
+    // Typing Status Logic
+    if (socket && user && selectedUser && !editMode) {
+      // Emit 'typing' event
+      socket.emit('typing', { 
+        senderId: user._id, 
+        receiverId: selectedUser._id 
+      });
+
+      // Clear existing timeout
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
+      // Set timeout to emit 'stop_typing' after 2 seconds
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit('stop_typing', { 
+          senderId: user._id, 
+          receiverId: selectedUser._id 
+        });
+      }, 2000);
+    }
   };
 
   return (
@@ -93,7 +129,7 @@ const MessageInput = ({ onSend, disabled, editMode, onCancelEdit }) => {
             id="message-input"
             type="text"
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder={disabled ? "Select a friend..." : editMode ? "Edit your message..." : "Type a message..."}
             disabled={disabled}

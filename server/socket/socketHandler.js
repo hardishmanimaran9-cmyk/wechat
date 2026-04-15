@@ -112,6 +112,19 @@ const socketHandler = (io) => {
       }
     });
 
+    // ---- TYPING STATUS ----
+    socket.on("typing", (data) => {
+      const { receiverId } = data;
+      // Emit 'user_typing' to the receiver's private room
+      io.to(receiverId).emit("user_typing", { userId: data.senderId });
+    });
+
+    socket.on("stop_typing", (data) => {
+      const { receiverId } = data;
+      // Emit 'user_stop_typing' to the receiver's private room
+      io.to(receiverId).emit("user_stop_typing", { userId: data.senderId });
+    });
+
     // ---- USER DISCONNECTED ----
     // When a user closes the browser or logs out
     socket.on("disconnect", async () => {
