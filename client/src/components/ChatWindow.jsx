@@ -16,9 +16,12 @@ import { useSocket } from '../context/SocketContext';
 const ChatWindow = ({ selectedUser }) => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [replyingTo, setReplyingTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const messagesEndRef = useRef(null);
+  const scrollContainerRef = useRef(null);
   const { user } = useAuth();
   const { socket, onlineUsers } = useSocket();
 
@@ -33,18 +36,53 @@ const ChatWindow = ({ selectedUser }) => {
 
     const fetchMessages = async () => {
       setLoading(true);
+      setHasMore(true);
       try {
         const response = await API.get(`/messages/${selectedUser._id}`);
         setMessages(response.data.messages);
+        setHasMore(response.data.hasMore);
       } catch (error) {
         console.error('Error fetching messages:', error);
       } finally {
         setLoading(false);
+        setTimeout(scrollToBottom, 50);
       }
     };
 
     fetchMessages();
   }, [selectedUser?._id]);
+
+  // Handle scrolling to top to load more
+  const handleScroll = async (e) => {
+    if (e.target.scrollTop === 0 && hasMore && !loadingMore && messages.length > 0) {
+      setLoadingMore(true);
+      const oldestMessageTimestamp = messages[0].createdAt;
+      const scrollHeightBefore = e.target.scrollHeight;
+
+      try {
+        const response = await API.get(`/messages/${selectedUser._id}?before=${oldestMessageTimestamp}`);
+        const olderMessages = response.data.messages;
+        
+        if (olderMessages.length > 0) {
+          setMessages((prev) => [...olderMessages, ...prev]);
+          setHasMore(response.data.hasMore);
+          
+          // Small delay to let DOM update before adjusting scroll
+          setTimeout(() => {
+            if (scrollContainerRef.current) {
+              scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight - scrollHeightBefore;
+            }
+          }, 0);
+        } else {
+          setHasMore(false);
+        }
+      } catch (error) {
+        console.error('Error loading older messages:', error);
+      } finally {
+        setLoadingMore(false);
+      }
+    }
+  };
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -98,7 +136,7 @@ const ChatWindow = ({ selectedUser }) => {
   }, [socket, selectedUser?._id]);
 
   // Send or Edit a message
-  const handleSendMessage = async (messageText, imageFile) => {
+  const handleSendMessage = async (messageText) => {
     if (!selectedUser) return;
 
     try {
@@ -107,15 +145,11 @@ const ChatWindow = ({ selectedUser }) => {
         await API.put(`/messages/${editingMessage._id}`, { newMessage: messageText });
         setEditingMessage(null);
       } else {
-        // Handle Send (Text or Image)
-        const formData = new FormData();
-        formData.append('receiverId', selectedUser._id);
-        if (messageText) formData.append('message', messageText);
-        if (imageFile) formData.append('image', imageFile);
-        if (replyingTo) formData.append('replyTo', replyingTo._id);
-
-        await API.post('/messages/send', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
+        // Handle Send (Text Only)
+        await API.post('/messages/send', {
+          receiverId: selectedUser._id,
+          message: messageText,
+          replyTo: replyingTo?._id || null
         });
       }
     } catch (error) {
@@ -123,6 +157,7 @@ const ChatWindow = ({ selectedUser }) => {
     }
     
     setReplyingTo(null);
+    setTimeout(scrollToBottom, 50);
   };
 
   // Delete/Unsend a message
@@ -217,15 +252,25 @@ const ChatWindow = ({ selectedUser }) => {
       </div>
 
       {/* ---- Messages Area ---- */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1"
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1 scroll-smooth"
+           ref={scrollContainerRef}
+           onScroll={handleScroll}
            style={{
              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
            }}>
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="w-8 h-8 border-3 border-chatwe-green border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-3 border-violet-500 border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : messages.length === 0 ? (
+        ) : (
+          <>
+            {loadingMore && (
+              <div className="flex justify-center py-4">
+                <div className="w-5 h-5 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+              </div>
+            )}
+            
+            {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-chatwe-green/10 flex items-center justify-center">
@@ -286,18 +331,6 @@ const ChatWindow = ({ selectedUser }) => {
                       </div>
                     )}
                     
-                    {/* Image Message */}
-                    {msg.image && (
-                      <div className="mb-2.5 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10">
-                        <img 
-                          src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/uploads/${msg.image}`} 
-                          alt="Sent" 
-                          className="max-w-full h-auto cursor-pointer hover:scale-105 transition-transform duration-500"
-                          onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/uploads/${msg.image}`, '_blank')}
-                        />
-                      </div>
-                    )}
-
                     <p className="text-[14px] leading-relaxed font-medium tracking-tight whitespace-pre-wrap">{msg.message}</p>
                     
                     <div className="flex items-center justify-end gap-2 mt-1.5">

@@ -4,10 +4,7 @@ import EmojiPicker from 'emoji-picker-react';
 const MessageInput = ({ onSend, disabled, editMode, onCancelEdit }) => {
   const [message, setMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
   const pickerRef = useRef(null);
-  const fileInputRef = useRef(null);
 
   // If in edit mode, populate the message input
   useEffect(() => {
@@ -31,39 +28,16 @@ const MessageInput = ({ onSend, disabled, editMode, onCancelEdit }) => {
     };
   }, []);
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert("File is too large (max 5MB)");
-        return;
-      }
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removeImage = () => {
-    setSelectedImage(null);
-    setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Don't send empty messages unless there's an image
-    if ((!message.trim() && !selectedImage) || disabled) return;
+    // Don't send empty messages
+    if (!message.trim() || disabled) return;
 
     if (editMode) {
-      onSend(message.trim(), null); // Pass null as image for edits
+      onSend(message.trim()); // Pass null as image for edits
     } else {
-      onSend(message.trim(), selectedImage);
-      removeImage();
+      onSend(message.trim());
     }
     
     setMessage(''); // Clear input after sending
@@ -84,20 +58,6 @@ const MessageInput = ({ onSend, disabled, editMode, onCancelEdit }) => {
 
   return (
     <div className="px-6 py-4 glass-light border-t border-white/5 relative z-20">
-      {/* Image Preview */}
-      {imagePreview && (
-        <div className="absolute bottom-full left-6 mb-4 p-2.5 glass shadow-2xl rounded-2xl animate-in slide-in-from-bottom-4 duration-300">
-          <div className="relative group">
-            <img src={imagePreview} alt="Preview" className="max-h-40 rounded-xl object-contain shadow-lg" />
-            <button 
-              onClick={removeImage}
-              className="absolute -top-3 -right-3 bg-red-500/80 backdrop-blur-md text-white rounded-full p-1.5 shadow-xl hover:bg-red-600 transition-all scale-0 group-hover:scale-100"
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Emoji Picker Popup */}
       {showEmojiPicker && (
@@ -127,27 +87,7 @@ const MessageInput = ({ onSend, disabled, editMode, onCancelEdit }) => {
           </svg>
         </button>
 
-        {/* Attachment button */}
-        {!editMode && (
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={disabled}
-            className="text-chatwe-icon hover:text-chatwe-textSec transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.414a4 4 0 00-5.656-5.656l-6.415 6.414a6 6 0 108.486 8.486L20.5 13" />
-            </svg>
-          </button>
-        )}
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          onChange={handleFileChange} 
-          accept="image/*" 
-          className="hidden" 
-        />
+        </button>
 
         {/* Message input */}
         <div className="flex-1 relative flex items-center">

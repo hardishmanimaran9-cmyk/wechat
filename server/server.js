@@ -12,6 +12,7 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
+const compression = require("compression");
 const path = require("path");
 const fs = require("fs");
 const connectDB = require("./config/db");
@@ -51,6 +52,8 @@ app.use(
 );
 // express.json() parses incoming JSON request bodies
 app.use(express.json());
+// compression() compresses all API responses
+app.use(compression());
 
 // Attach io to req so it's accessible in controllers
 app.use((req, res, next) => {
@@ -58,10 +61,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve uploads folder statically
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-// Step 7: API Routes
+// All auth routes will be prefixed with /api/auth
 // All auth routes will be prefixed with /api/auth
 app.use("/api/auth", authRoutes);
 // All user routes will be prefixed with /api/users

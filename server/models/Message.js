@@ -22,17 +22,11 @@ const messageSchema = new mongoose.Schema(
       required: true,
     },
 
-    // The actual message text (now optional if an image is sent)
+    // The actual message text
     message: {
       type: String,
-      required: false,
+      required: true,
       trim: true,
-    },
-
-    // Optional field for image message
-    image: {
-      type: String,
-      default: null,
     },
 
     // Track if a message has been edited
@@ -54,6 +48,11 @@ const messageSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Optimize performance for fetching messages between two users
+// These compound indexes make the $or query in getMessages lightning fast
+messageSchema.index({ sender: 1, receiver: 1, createdAt: -1 });
+messageSchema.index({ receiver: 1, sender: 1, createdAt: -1 });
 
 // Add a TTL (Time To Live) index on the 'createdAt' field.
 // MongoDB will automatically delete messages 2 days (172800 seconds) after they are created!

@@ -5,55 +5,17 @@
 
 const Message = require("../models/Message");
 const User = require("../models/User");
-const sharp = require("sharp");
 const path = require("path");
 const fs = require("fs");
 
 // ---- SEND MESSAGE ----
 // POST /api/messages/send
 // Send a message to another user (must be friends)
-const sendMessage = async (req, res) => {
-  try {
-    const { receiverId, message } = req.body;
-    const senderId = req.user._id;
-
-    // Validate input: Either message or image is required
-    if (!receiverId || (!message && !req.file)) {
-      return res.status(400).json({
-        success: false,
-        message: "Receiver and at least a message or image are required.",
-      });
-    }
-
-    // Check if they are friends
-    const sender = await User.findById(senderId);
-    if (!sender.friends.includes(receiverId)) {
-      return res.status(403).json({
-        success: false,
-        message: "You can only message your friends. Send a chat request first.",
-      });
-    }
-
-    let imagePath = null;
-    if (req.file) {
-      const fileName = `chat-${Date.now()}.webp`;
-      const fullPath = path.join(__dirname, "../uploads", fileName);
-      
-      // Compress image using sharp
-      await sharp(req.file.buffer)
-        .resize(800, 800, { fit: "inside", withoutEnlargement: true })
-        .webp({ quality: 80 })
-        .toFile(fullPath);
-        
-      imagePath = fileName;
-    }
-
     // Create the message in the database
     const newMessage = await Message.create({
       sender: senderId,
       receiver: receiverId,
-      message: message ? message.trim() : "",
-      image: imagePath,
+      message: message.trim(),
       replyTo: req.body.replyTo || null,
     });
 
@@ -86,24 +48,38 @@ const sendMessage = async (req, res) => {
 const getMessages = async (req, res) => {
   try {
     const { userId } = req.params;
+    const { before } = req.query; // Timestamp for pagination
     const currentUserId = req.user._id;
+    const limit = 30; // Fetch 30 messages at a time
 
-    // Find all messages between the two users (in both directions)
-    // Sort by createdAt so messages appear in order
-    const messages = await Message.find({
+    // Build query
+    const query = {
       $or: [
         { sender: currentUserId, receiver: userId },
         { sender: userId, receiver: currentUserId },
       ],
-    })
-      .sort({ createdAt: 1 }) // 1 = oldest first (ascending)
+    };
+
+    // If 'before' is provided, only fetch messages older than that
+    if (before) {
+      query.createdAt = { $lt: new Date(before) };
+    }
+
+    // Find messages, sort by newest first for slicing, then we'll reverse in frontend
+    const messages = await Message.find(query)
+      .sort({ createdAt: -1 }) 
+      .limit(limit)
       .populate("sender", "-password")
       .populate("receiver", "-password")
       .populate({ path: "replyTo", populate: { path: "sender", select: "email" } });
 
+    // Reverse to return in chronological order
+    messages.reverse();
+
     res.status(200).json({
       success: true,
       messages,
+      hasMore: messages.length === limit,
     });
   } catch (error) {
     console.error("Get messages error:", error);
@@ -171,14 +147,6 @@ const deleteMessage = async (req, res) => {
 
     if (message.sender.toString() !== userId.toString()) {
       return res.status(403).json({ success: false, message: "Unauthorized" });
-    }
-
-    // If there is an image, delete it from the server
-    if (message.image) {
-      const filePath = path.join(__dirname, "../uploads", message.image);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
     }
 
     const { receiver, sender } = message;
