@@ -226,7 +226,7 @@ const ChatWindow = ({ selectedUser }) => {
         <div className="relative">
           <div className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden rotate-3">
             <span className="text-violet-400 font-bold text-lg -rotate-3">
-              {selectedUser.email.charAt(0).toUpperCase()}
+              {(selectedUser.username || selectedUser.email).charAt(0).toUpperCase()}
             </span>
           </div>
           {isOnline && (
@@ -237,7 +237,7 @@ const ChatWindow = ({ selectedUser }) => {
 
         {/* User info */}
         <div className="flex-1">
-          <p className="text-slate-100 text-sm font-bold tracking-tight">{selectedUser.email}</p>
+          <p className="text-slate-100 text-sm font-bold tracking-tight">{selectedUser.username || selectedUser.email}</p>
           <div className="flex items-center gap-1.5 mt-0.5">
             <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-violet-500' : 'bg-slate-600'}`}></div>
             <p className={`text-[11px] font-bold uppercase tracking-widest ${isOnline ? 'text-violet-400' : 'text-slate-500'}`}>
@@ -321,7 +321,7 @@ const ChatWindow = ({ selectedUser }) => {
                           <div className={`rounded-xl p-2.5 mb-2.5 text-xs border-l-4 backdrop-blur-md
                             ${isMine ? 'bg-white/10 border-white/30' : 'bg-black/20 border-violet-500'}`}>
                             <span className="font-bold block truncate mb-0.5">
-                              {msg.replyTo.sender?._id === user._id || msg.replyTo.sender === user._id ? 'You' : msg.replyTo.sender?.email || "Someone"}
+                              {msg.replyTo.sender?._id === user._id || msg.replyTo.sender === user._id ? 'You' : msg.replyTo.sender?.username || msg.replyTo.sender?.email || "Someone"}
                             </span>
                             <span className="truncate block opacity-70 italic">{msg.replyTo.message}</span>
                           </div>
@@ -374,7 +374,7 @@ const ChatWindow = ({ selectedUser }) => {
       {replyingTo && (
         <div className="bg-white/5 px-6 py-2 flex items-center justify-between border-t border-white/5 backdrop-blur-lg">
           <div className="flex flex-col flex-1 min-w-0 border-l-2 border-violet-500 pl-3">
-            <span className="text-violet-400 text-[10px] font-black uppercase tracking-widest">Replying to {replyingTo.sender?._id === user._id || replyingTo.sender === user._id ? 'yourself' : replyingTo.sender?.email || 'someone'}</span>
+            <span className="text-violet-400 text-[10px] font-black uppercase tracking-widest">Replying to {replyingTo.sender?._id === user._id || replyingTo.sender === user._id ? 'yourself' : replyingTo.sender?.username || replyingTo.sender?.email || 'someone'}</span>
             <span className="text-slate-300 text-xs truncate font-medium">{replyingTo.message}</span>
           </div>
           <button onClick={() => setReplyingTo(null)} className="text-slate-500 hover:text-slate-100 p-2 ml-4 transition-colors">

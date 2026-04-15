@@ -89,7 +89,38 @@ const getMe = async (req, res) => {
     });
   }
 };
+// ---- UPDATE PROFILE ----
+// PUT /api/users/profile
+const updateProfile = async (req, res) => {
+  try {
+    const { username, bio } = req.body;
+    const userId = req.user._id;
 
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
 
+    if (username !== undefined) user.username = username;
+    if (bio !== undefined) user.bio = bio;
 
-module.exports = { searchUsers, getFriends, getMe };
+    await user.save();
+
+    // Return user without password
+    const updatedUser = await User.findById(userId).select("-password");
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while updating profile.",
+    });
+  }
+};
+
+module.exports = { searchUsers, getFriends, getMe, updateProfile };

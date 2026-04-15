@@ -22,6 +22,10 @@ const socketHandler = (io) => {
     socket.on("user_connected", async (userId) => {
       // Store the mapping: userId -> socketId
       onlineUsers.set(userId, socket.id);
+      
+      // Join a private room for this user
+      // This allows sending messages to this user by userId instead of socketId
+      socket.join(userId);
 
       // Update user status in database
       try {
@@ -30,7 +34,7 @@ const socketHandler = (io) => {
         console.error("Error updating user status:", err);
       }
 
-      console.log(`✅ User ${userId} is online. Total online: ${onlineUsers.size}`);
+      console.log(`✅ User ${userId} is online and joined room. Total online: ${onlineUsers.size}`);
 
       // Tell ALL connected clients who is online
       io.emit("online_users", Array.from(onlineUsers.keys()));

@@ -11,6 +11,15 @@ const fs = require("fs");
 // ---- SEND MESSAGE ----
 // POST /api/messages/send
 // Send a message to another user (must be friends)
+const sendMessage = async (req, res) => {
+  try {
+    const { receiverId, message } = req.body;
+    const senderId = req.user._id;
+
+    if (!receiverId || !message) {
+      return res.status(400).json({ success: false, message: "Receiver and message are required" });
+    }
+
     // Create the message in the database
     const newMessage = await Message.create({
       sender: senderId,
@@ -25,9 +34,10 @@ const fs = require("fs");
       .populate("receiver", "-password")
       .populate({ path: "replyTo", populate: { path: "sender", select: "email" } });
 
-    // Emit to both parties via Socket.IO
-    req.io.to(receiverId.toString()).emit("receive_message", populatedMessage);
-    req.io.to(senderId.toString()).emit("receive_message", populatedMessage);
+    // Emit to both parties via Socket.IO using their private rooms
+    const io = req.io;
+    io.to(receiverId.toString()).emit("receive_message", populatedMessage);
+    io.to(senderId.toString()).emit("receive_message", populatedMessage);
 
     res.status(201).json({
       success: true,
