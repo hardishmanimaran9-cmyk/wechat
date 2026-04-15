@@ -11,11 +11,13 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ChatDashboard from './pages/ChatDashboard';
+import NotificationCenter from './components/NotificationCenter';
 
 function App() {
   return (
     <AuthProvider>
       <SocketProvider>
+        <NotificationCenter />
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />

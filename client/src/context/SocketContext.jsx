@@ -21,6 +21,7 @@ export const SocketProvider = ({ children }) => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typingStatus, setTypingStatus] = useState({}); // { userId: boolean }
   const [unreadCounts, setUnreadCounts] = useState({}); // { userId: count }
+  const [notifications, setNotifications] = useState([]); // { id, message, sender }
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -57,15 +58,27 @@ export const SocketProvider = ({ children }) => {
 
       // Listen for notification-worthy messages
       newSocket.on('receive_message', (message) => {
-        // Notification logic: If message is from someone else, increment unread count
-        // Note: The specific ChatWindow/Sidebar will handle the 'selectedUser' comparison
-        // via a helper function or by checking the state globally.
         const senderId = message.sender._id || message.sender;
+        
+        // If message is NOT from me
         if (senderId !== user?._id) {
+           // Increment unread count globally
            setUnreadCounts((prev) => ({
              ...prev,
              [senderId]: (prev[senderId] || 0) + 1
            }));
+
+           // Trigger a visual notification if the sender is not currently open
+           // This will be handled by the NotificationToast listening to the 'notifications' state
+           setNotifications((prev) => [
+             ...prev, 
+             { 
+               id: Date.now(), 
+               text: message.message, 
+               sender: message.sender.username || message.sender.email,
+               senderId: senderId
+             }
+           ]);
         }
       });
 
@@ -94,12 +107,18 @@ export const SocketProvider = ({ children }) => {
     setUnreadCounts((prev) => ({ ...prev, [userId]: 0 }));
   };
 
+  const removeNotification = (id) => {
+    setNotifications((prev) => prev.filter(n => n.id !== id));
+  };
+
   const value = {
     socket,
     onlineUsers,
     typingStatus,
     unreadCounts,
+    notifications,
     clearUnread,
+    removeNotification,
   };
 
   return (

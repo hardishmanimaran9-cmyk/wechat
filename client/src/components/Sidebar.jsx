@@ -68,9 +68,32 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
       fetchRequests();
     });
 
+    // Real-time update for last message preview in sidebar
+    socket.on('receive_message', (newMessage) => {
+      setFriends((prev) => 
+        prev.map((friend) => {
+          const isSender = (newMessage.sender._id || newMessage.sender) === friend._id;
+          const isReceiver = (newMessage.receiver._id || newMessage.receiver) === friend._id;
+          
+          if (isSender || isReceiver) {
+            return {
+              ...friend,
+              lastMessage: newMessage
+            };
+          }
+          return friend;
+        }).sort((a, b) => {
+          const dateA = a.lastMessage ? new Date(a.lastMessage.createdAt) : new Date(0);
+          const dateB = b.lastMessage ? new Date(b.lastMessage.createdAt) : new Date(0);
+          return dateB - dateA;
+        })
+      );
+    });
+
     return () => {
       socket.off('request_received');
       socket.off('request_updated');
+      socket.off('receive_message');
     };
   }, [socket]);
 
@@ -261,33 +284,36 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
 
                     {/* Friend info */}
                     <div className="flex-1 text-left min-w-0">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-2">
                         <p className="text-chatwe-text text-sm font-bold truncate">
                           {friend.username || friend.email}
                         </p>
-                        {unreadCounts[friend._id] > 0 && selectedUser?._id !== friend._id && (
-                          <span className="bg-violet-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-lg shadow-violet-500/20">
-                            {unreadCounts[friend._id]}
+                        {friend.lastMessage && (
+                          <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">
+                            {new Date(friend.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         )}
                       </div>
                       
-                      {typingStatus[friend._id] ? (
-                        <p className="text-[10px] font-bold text-violet-400 animate-pulse uppercase tracking-widest mt-0.5">
-                          Typing...
-                        </p>
-                      ) : (
-                        <div className="flex flex-col">
-                          {friend.username && (
-                            <p className="text-chatwe-textSec/40 text-[10px] truncate">
-                              {friend.email}
+                      <div className="flex items-center justify-between mt-0.5">
+                        <div className="flex-1 min-w-0">
+                          {typingStatus[friend._id] ? (
+                            <p className="text-[11px] font-bold text-violet-400 animate-pulse uppercase tracking-widest">
+                              Typing...
+                            </p>
+                          ) : (
+                            <p className="text-chatwe-textSec/60 text-[12px] truncate font-medium">
+                              {friend.lastMessage ? friend.lastMessage.message : 'No messages yet'}
                             </p>
                           )}
-                          <p className={`text-[10px] font-medium ${isOnline(friend._id) ? 'text-violet-400' : 'text-slate-500'}`}>
-                            {isOnline(friend._id) ? 'Online' : 'Offline'}
-                          </p>
                         </div>
-                      )}
+                        
+                        {unreadCounts[friend._id] > 0 && selectedUser?._id !== friend._id && (
+                          <span className="bg-violet-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-lg shadow-violet-500/20 flex-shrink-0 animate-bounce-short">
+                            {unreadCounts[friend._id]}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </button>
                 ))}

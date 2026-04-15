@@ -7,6 +7,7 @@
 // - Get current user's profile
 
 const User = require("../models/User");
+const Message = require("../models/Message");
 
 // ---- SEARCH USERS ----
 // GET /api/users/search?email=something
@@ -48,15 +49,46 @@ const searchUsers = async (req, res) => {
 // Get the current user's friends list with their details
 const getFriends = async (req, res) => {
   try {
-    // Find the current user and "populate" their friends
-    // populate() replaces the friend IDs with actual user data
-    const user = await User.findById(req.user._id)
-      .populate("friends", "-password") // Get friend details, exclude passwords
+    const currentUserId = req.user._id;
+
+    // Find the current user and populate their friends
+    const user = await User.findById(currentUserId)
+      .populate("friends", "-password")
       .select("friends");
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // For each friend, find the most recent message exchanged
+    const friendsWithLastMessage = await Promise.all(
+      user.friends.map(async (friend) => {
+        const lastMessage = await Message.findOne({
+          $or: [
+            { sender: currentUserId, receiver: friend._id },
+            { sender: friend._id, receiver: currentUserId },
+          ],
+        })
+          .sort({ createdAt: -1 })
+          .limit(1);
+
+        // Convert friend to object and add lastMessage
+        const friendObj = friend.toObject();
+        friendObj.lastMessage = lastMessage;
+        return friendObj;
+      })
+    );
+
+    // Sort friends by last message date (most recent first)
+    friendsWithLastMessage.sort((a, b) => {
+      const dateA = a.lastMessage ? new Date(a.lastMessage.createdAt) : new Date(0);
+      const dateB = b.lastMessage ? new Date(b.lastMessage.createdAt) : new Date(0);
+      return dateB - dateA;
+    });
 
     res.status(200).json({
       success: true,
-      friends: user.friends,
+      friends: friendsWithLastMessage,
     });
   } catch (error) {
     console.error("Get friends error:", error);

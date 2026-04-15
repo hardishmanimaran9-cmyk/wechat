@@ -95,3 +95,19 @@ body {
 .auth-gradient {
   background: radial-gradient(circle at top left, #1e1b4b 0%, #020617 100%);
 }
+
+/* ---- Notifications & Misc Animations ---- */
+@keyframes notification-progress {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+@keyframes bounce-short {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-bounce-short {
+  animation: bounce-short 1.5s ease-in-out infinite;
+}
+
